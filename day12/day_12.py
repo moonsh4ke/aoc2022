@@ -1,88 +1,103 @@
-import sys
+HEIGHT_MAP = list()
 
-# Update de shortest path to cell
-def update_cell(tovisit: list, hmap: list, path: list, fromm: tuple, to: tuple):
-    i, j = fromm
-    k, l = to
-    if k < 0 or l < 0:
-        return
+# values:
+# 0: non visited
+# 1: cell is a path
+# 2: cell to visit
+# 3: dead cell
+PATHS = list()
+
+def jumpeable(current: tuple, adjacent: tuple) -> bool:
+    i, j = current
+    k, l = adjacent
+    current = HEIGHT_MAP[i][j]
+    # If adjacent is not indexeable, then current is a limit, so return false
     try:
-        if hmap[k][l] != 'v' and \
-                hmap[i][j] != 'v' and \
-                hmap[k][l] - hmap[i][j] <= 1:
-            if path[i][j] + 1 < path[k][l]:
-                path[k][l] = path[i][j] + 1
-                tovisit.append(to)
+        adjacent = HEIGHT_MAP[k][l]
     except IndexError:
-        return
+        return False
+    return (ord(adjacent) - ord(current)) < 2 and PATHS[k][l] == 0
 
-def print_map(map: list):
-    for row in map:
+def pp ():
+    for row in PATHS:
         print(row)
 
-def height_to_number(c: str) -> int:
-    if c != 'S' and c != 'E':
-        return ord(c)
-    elif c == 'S':
-        return ord('a')
-    elif c == 'E':
-        return ord('z')
+def ph ():
+    for row in HEIGHT_MAP:
+        print(row)
 
-map = list()
-hmap = list()
-with open("input.txt", "r") as f:
-    # Leer input como una matriz
-    while True:
+
+stack = list()
+
+with open("test1.txt", "r") as f:
+    while(True):
         line = f.readline()
         if line == "":
             break
         line = line.replace("\n", "")
-        row = list()
-        for c in line:
-            row.append(c)
-        map.append(row)
+        HEIGHT_MAP.append([letter for letter in line])
 
-# Find S and E positions
-for i in range(len(map)):
-    for j in range(len(map[0])):
-        if map[i][j] == "S":
-            s = i, j
-        elif map[i][j] == "E":
-            e = i, j
+# Search for start
+for i in range(len(HEIGHT_MAP)):
+    for j in range(len(HEIGHT_MAP[0])):
+        if HEIGHT_MAP[i][j] == "S":
+            HEIGHT_MAP[i][j] = "a"
+            start = i, j
+        elif HEIGHT_MAP[i][j] == "E":
+            HEIGHT_MAP[i][j] = "z"
+            end = i, j
 
-# Make a height map
-hmap = [[0] * len(map[0]) for _ in range(len(map))]
-for i in range(len(map)):
-    for j in range(len(map[0])):
-        if map[i][j] == "S": hmap[i][j] = ord('a')
-        elif map[i][j] == "E":
-            hmap[i][j] = ord('z')
-        else:
-            hmap[i][j] = ord(map[i][j])
+PATHS = [[0] * len(HEIGHT_MAP[0]) for _ in range(len(HEIGHT_MAP))]
 
-## Apply Dijkstra starting at position s
+# Search for paths
+stack.append(start)
+while(len(stack) > 0):
+    current = stack.pop()
+    i, j = current
+    top = i - 1, j
+    right = i, j + 1
+    bottom = i + 1, j
+    left = i, j - 1
 
-# Make a matrix with path's cost. Initial state is setting startint point to 0 cost
-# And all others are going to be infinite (-1)
-path = [[sys.maxsize] * len(map[0]) for _ in range(len(map))]
-i, j = s
-path[i][j] = 0
+    k, l = top
+    if jumpeable(current, top) == True:
+        PATHS[k][l] = 2
+        stack.append(top)
+    else:
+        try:
+            if PATHS[k][l] != 1 and PATHS[k][l] != 2:
+                PATHS[k][l] = 3
+        except IndexError:
+            pass
+    k, l = right
+    if jumpeable(current, right) == True:
+        PATHS[k][l] = 2
+        stack.append(right)
+    else:
+        try:
+            if PATHS[k][l] != 1 and PATHS[k][l] != 2:
+                PATHS[k][l] = 3
+        except IndexError:
+            pass
+    k, l = bottom
+    if jumpeable(current, bottom) == True:
+        PATHS[k][l] = 2
+        stack.append(bottom)
+    else:
+        try:
+            if PATHS[k][l] != 1 and PATHS[k][l] != 2:
+                PATHS[k][l] = 3
+        except IndexError:
+            pass
+    k, l = left
+    if jumpeable(current, left) == True:
+        PATHS[k][l] = 2
+        stack.append(left)
+    else:
+        try:
+            if PATHS[k][l] != 1 and PATHS[k][l] != 2:
+                PATHS[k][l] = 3
+        except IndexError:
+            pass
 
-tovisit = list()
-tovisit.append(s)
-
-# Mientras haya celdas por visitar
-while tovisit != list():
-    i, j = tovisit.pop()
-    update_cell(tovisit, hmap, path, (i, j), (i - 1, j))
-    update_cell(tovisit, hmap, path, (i, j), (i, j + 1))
-    update_cell(tovisit, hmap, path, (i, j), (i + 1, j))
-    update_cell(tovisit, hmap, path, (i, j), (i, j - 1))
-    tovisit = sorted(tovisit, key=lambda x: path[x[0]][x[1]], reverse=True)
-    hmap[i][j] = 'v'
-    # print(f"{i, j}")
-    # print_map(path)
-    # input("...")
-
-i, j = e
-print(path[i][j])
+    PATHS[i][j] = 1
